@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Lead {
+  id                     String   @id @default(cuid())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  firstName              String
+  lastName               String
+  phoneE164              String   @unique
+  email                  String?
+  state                  String?
+  timezone               String?  // IANA tz e.g., America/New_York
+
+  // Consent artifacts (required for dialing with AI)
+  consentText            String
+  consentTimestamp       DateTime
+  consentIp              String?
+  consentPageUrl         String?
+  trustedFormToken       String?  @unique
+  expressWrittenConsent  Boolean  @default(false)
+
+  // Lifecycle
+  lastAttemptAt          DateTime?
+  status                 LeadStatus @default(Pending)
+  attempts               Int      @default(0)
+  notes                  String?
+
+  calls                  Call[]
+}
+
+model Call {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  lead             Lead     @relation(fields: [leadId], references: [id])
+  leadId           String
+
+  providerCallSid  String?  @unique
+  transcript       String?
+  sentiment        Float?
+  intent           String?
+  outcome          CallOutcome @default(NoAnswer)
+  transferred      Boolean @default(false)
+}
+
+model Suppression {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  phoneE164   String   @unique
+  reason      String?
+}
+
+enum LeadStatus {
+  Pending
+  Dnc
+  Suppressed
+  Scheduled
+  Completed
+  Failed
+}
+
+enum CallOutcome {
+  NoAnswer
+  Declined
+  Interested
+  Transferred
+  OptOut
+  Error
+}

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Dialer - Real Conversation</title>
+    <script src="https://sdk.twilio.com/js/client/releases/1.14.0/twilio.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .dialer {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .phone-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 24px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .call-button {
+            width: 100%;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background: #4CAF50;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+        .call-button:hover:not(:disabled) {
+            background: #45a049;
+            transform: scale(1.02);
+        }
+        .call-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .end-button {
+            background: #f44336;
+        }
+        .end-button:hover:not(:disabled) {
+            background: #da190b;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .dial-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .dial-button {
+            width: 70px;
+            height: 70px;
+            border: none;
+            border-radius: 50%;
+            background: #f0f0f0;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0 auto;
+        }
+        .dial-button:hover {
+            background: #e0e0e0;
+            transform: scale(1.1);
+        }
+        .clear-btn {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .clear-btn:hover {
+            background: #f57c00;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="dialer">
+        <div class="title">🎤 WebRTC Real Conversation Dialer</div>
+        
+        <div class="instructions">
+            <strong>How it works:</strong><br>
+            1. Enter a phone number below<br>
+            2. Click "Call from Laptop" - your browser will ask for microphone permission<br>
+            3. You can speak directly from your laptop to the person you're calling<br>
+            4. They will hear you and can respond back to you
+        </div>
+        
+        <input type="tel" class="phone-input" id="phoneInput" placeholder="Enter phone number (e.g., +1234567890)" maxlength="20">
+        
+        <button class="clear-btn" onclick="clearNumber()">Clear</button>
+        
+        <div class="dial-pad">
+            <button class="dial-button" onclick="addDigit('1')">1</button>
+            <button class="dial-button" onclick="addDigit('2')">2</button>
+            <button class="dial-button" onclick="addDigit('3')">3</button>
+            <button class="dial-button" onclick="addDigit('4')">4</button>
+            <button class="dial-button" onclick="addDigit('5')">5</button>
+            <button class="dial-button" onclick="addDigit('6')">6</button>
+            <button class="dial-button" onclick="addDigit('7')">7</button>
+            <button class="dial-button" onclick="addDigit('8')">8</button>
+            <button class="dial-button" onclick="addDigit('9')">9</button>
+            <button class="dial-button" onclick="addDigit('*')">*</button>
+            <button class="dial-button" onclick="addDigit('0')">0</button>
+            <button class="dial-button" onclick="addDigit('#')">#</button>
+        </div>
+        
+        <button class="call-button" id="callButton" onclick="makeCall()">🎤 Call from Laptop</button>
+        <button class="call-button end-button" id="endButton" onclick="endCall()" style="display: none;">📞 End Call</button>
+        
+        <div id="status" class="status" style="display: none;"></div>
+    </div>
+
+    <script>
+        let device = null;
+        let activeCall = null;
+        let isInitialized = false;
+
+        // Initialize Twilio Device
+        async function initializeDevice() {
+            try {
+                showStatus('Initializing WebRTC...', 'info');
+                
+                // Get token from server
+                const response = await fetch('/token', { method: 'POST' });
+                const { token } = await response.json();
+                
+                // Initialize Twilio Device
+                device = new Twilio.Device(token, {
+                    logLevel: 1,
+                    codecPreferences: ['opus', 'pcmu']
+                });
+                
+                device.on('registered', () => {
+                    console.log('Device registered');
+                    showStatus('✅ Ready to make calls from your laptop!', 'success');
+                    isInitialized = true;
+                });
+                
+                device.on('error', (error) => {
+                    console.error('Device error:', error);
+                    showStatus('❌ WebRTC initialization failed: ' + error.message, 'error');
+                    isInitialized = false;
+                });
+                
+                device.on('incoming', (call) => {
+                    console.log('Incoming call:', call);
+                    showStatus('📞 Incoming call...', 'info');
+                });
+                
+            } catch (error) {
+                console.error('Failed to initialize:', error);
+                showStatus('❌ Failed to initialize WebRTC: ' + error.message, 'error');
+            }
+        }
+
+        function addDigit(digit) {
+            if (!activeCall) {
+                document.getElementById('phoneInput').value += digit;
+            }
+        }
+
+        function clearNumber() {
+            if (!activeCall) {
+                document.getElementById('phoneInput').value = '';
+            }
+        }
+
+        async function makeCall() {
+            const phoneInput = document.getElementById('phoneInput');
+            const phoneNumber = phoneInput.value.trim();
+            
+            if (!phoneNumber) {
+                showStatus('Please enter a phone number', 'error');
+                return;
+            }
+            
+            if (!isInitialized || !device) {
+                showStatus('WebRTC not ready. Please wait...', 'warning');
+                return;
+            }
+            
+            if (activeCall) {
+                showStatus('Call already in progress', 'warning');
+                return;
+            }
+            
+            try {
+                showStatus('🎤 Connecting from your laptop...', 'info');
+                
+                // Make WebRTC call from browser to target number
+                activeCall = await device.connect({
+                    params: { To: phoneNumber }
+                });
+                
+                showStatus('✅ Connected! You can now speak from your laptop!', 'success');
+                
+                // Update UI
+                document.getElementById('callButton').style.display = 'none';
+                document.getElementById('endButton').style.display = 'block';
+                phoneInput.disabled = true;
+                
+                // Handle call events
+                activeCall.on('disconnect', () => {
+                    console.log('Call disconnected');
+                    endCall();
+                });
+                
+                activeCall.on('cancel', () => {
+                    console.log('Call cancelled');
+                    endCall();
+                });
+                
+                activeCall.on('error', (error) => {
+                    console.error('Call error:', error);
+                    showStatus('❌ Call error: ' + error.message, 'error');
+                    endCall();
+                });
+                
+            } catch (error) {
+                console.error('Call failed:', error);
+                showStatus('❌ Call failed: ' + error.message, 'error');
+                activeCall = null;
+            }
+        }
+
+        function endCall() {
+            if (activeCall) {
+                activeCall.disconnect();
+                activeCall = null;
+            }
+            
+            // Reset UI
+            document.getElementById('callButton').style.display = 'block';
+            document.getElementById('endButton').style.display = 'none';
+            document.getElementById('phoneInput').disabled = false;
+            
+            showStatus('📞 Call ended', 'info');
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', initializeDevice);
+    </script>
+</body>
+</html>

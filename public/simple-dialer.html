@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Conference Dialer - Real Conversation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .dialer {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .phone-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 24px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .call-button {
+            width: 100%;
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background: #4CAF50;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+        .call-button:hover:not(:disabled) {
+            background: #45a049;
+            transform: scale(1.02);
+        }
+        .call-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .end-button {
+            background: #f44336;
+        }
+        .end-button:hover:not(:disabled) {
+            background: #da190b;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .phone-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dialer">
+        <div class="title">📞 Conference Call Dialer</div>
+        
+        <div class="instructions">
+            <strong>How it works:</strong><br>
+            1. Your Twilio number will call the target number<br>
+            2. Enter the target number (who you want to call)<br>
+            3. Click "Call from Twilio"<br>
+            4. The target will receive a call from your Twilio number<br>
+            5. You can have a real conversation!
+        </div>
+        
+        <div>
+            <label>Target Number (who you want to call):</label>
+            <input type="tel" class="phone-input" id="targetPhone" placeholder="+1234567890" maxlength="20">
+        </div>
+        
+        <button class="call-button" id="callButton" onclick="startCall()">📞 Call from Twilio</button>
+        <button class="call-button end-button" id="endButton" onclick="endCall()" style="display: none;">📞 End Call</button>
+        
+        <div id="status" class="status" style="display: none;"></div>
+    </div>
+
+    <script>
+        let activeCall = null;
+
+        async function startCall() {
+            const targetPhone = document.getElementById('targetPhone').value.trim();
+            
+            if (!targetPhone) {
+                showStatus('Please enter the target phone number', 'error');
+                return;
+            }
+            
+            if (activeCall) {
+                showStatus('Call already in progress', 'warning');
+                return;
+            }
+            
+            try {
+                showStatus('📞 Calling from your Twilio number...', 'info');
+                
+                // Start direct call from Twilio number to target
+                const response = await fetch('/call-direct', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        to: targetPhone
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus('✅ Call connected! Target will hear your Twilio number.', 'success');
+                    activeCall = { sid: result.callSid };
+                    
+                    // Update UI
+                    document.getElementById('callButton').style.display = 'none';
+                    document.getElementById('endButton').style.display = 'block';
+                    document.getElementById('targetPhone').disabled = true;
+                } else {
+                    showStatus('❌ Call failed: ' + result.error, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Call failed:', error);
+                showStatus('❌ Call failed: ' + error.message, 'error');
+            }
+        }
+
+        async function endCall() {
+            if (activeCall) {
+                try {
+                    await fetch('/end', { method: 'POST' });
+                } catch (error) {
+                    console.error('Error ending call:', error);
+                }
+            }
+            
+            // Reset UI
+            document.getElementById('callButton').style.display = 'block';
+            document.getElementById('endButton').style.display = 'none';
+            document.getElementById('targetPhone').disabled = false;
+            
+            activeCall = null;
+            showStatus('📞 Call ended', 'info');
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
