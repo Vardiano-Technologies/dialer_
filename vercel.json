@@ -19,6 +19,22 @@
       "dest": "/server.js"
     },
     {
+      "src": "/call",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/status",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/end",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/reset",
+      "dest": "/server.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/dist/$1"
     }

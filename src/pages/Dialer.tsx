@@ -121,18 +121,27 @@ export function Dialer() {
           const apiUrl = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000'
           const response = await fetch(`${apiUrl}/api/calls/active${agentIdForStatus ? `?agentId=${agentIdForStatus}` : ''}`)
           if (response.ok) {
-            const data = await response.json()
-            console.log('Call status response:', data) // Debug log
-            if (data.isActive === true) {
-              setCallDuration(data.duration || 0)
-              setCallStatus(`✅ Call in progress - Duration: ${formatDuration(data.duration || 0)}`)
+            const contentType = response.headers.get('content-type')
+            if (contentType && contentType.includes('application/json')) {
+              const data = await response.json()
+              console.log('Call status response:', data) // Debug log
+              if (data.isActive === true) {
+                setCallDuration(data.duration || 0)
+                setCallStatus(`✅ Call in progress - Duration: ${formatDuration(data.duration || 0)}`)
+              } else {
+                setCallStatus('Call ended')
+                setIsCalling(false)
+                setActiveCall(null)
+                setCallDuration(0)
+                fetchCallHistory() // Refresh call history
+              }
             } else {
-              setCallStatus('Call ended')
-              setIsCalling(false)
-              setActiveCall(null)
-              setCallDuration(0)
-              fetchCallHistory() // Refresh call history
+              console.error('Response is not JSON:', await response.text())
+              setCallStatus('❌ Server error - invalid response')
             }
+          } else {
+            console.error('API call failed:', response.status, response.statusText)
+            setCallStatus('❌ Server error - API unavailable')
           }
         } catch (error) {
           console.error('Error fetching call status:', error)
