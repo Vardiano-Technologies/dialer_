@@ -23,7 +23,7 @@ export function Calls() {
 
   const fetchCalls = async () => {
     try {
-      const response = await fetch('/status')
+      const response = await fetch('/api/calls')
       if (response.ok) {
         const data = await response.json()
         setCalls(data)

@@ -3,187 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Conference Dialer - Real Conversation</title>
+    <title>AI Dialer - Simple Interface</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
+            max-width: 800px;
+            margin: 0 auto;
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
-        .dialer {
+        .container {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            text-align: center;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        .title {
-            font-size: 28px;
-            font-weight: bold;
+        h1 {
             color: #333;
+            text-align: center;
             margin-bottom: 30px;
         }
-        .phone-input {
-            width: 100%;
-            padding: 15px;
-            font-size: 24px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
+        .form-group {
             margin-bottom: 20px;
-            text-align: center;
         }
-        .call-button {
-            width: 100%;
-            padding: 20px;
-            font-size: 20px;
+        label {
+            display: block;
+            margin-bottom: 5px;
             font-weight: bold;
-            color: white;
+            color: #555;
+        }
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
             background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 10px;
+            font-size: 18px;
+            width: 100%;
+            margin-top: 10px;
         }
-        .call-button:hover:not(:disabled) {
+        button:hover {
             background: #45a049;
-            transform: scale(1.02);
         }
-        .call-button:disabled {
+        button:disabled {
             background: #ccc;
             cursor: not-allowed;
-        }
-        .end-button {
-            background: #f44336;
-        }
-        .end-button:hover:not(:disabled) {
-            background: #da190b;
         }
         .status {
             margin-top: 20px;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 8px;
+            text-align: center;
             font-weight: bold;
         }
-        .status.success { background: #d4edda; color: #155724; }
-        .status.error { background: #f8d7da; color: #721c24; }
-        .status.info { background: #d1ecf1; color: #0c5460; }
-        .status.warning { background: #fff3cd; color: #856404; }
-        .instructions {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: left;
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
-        .phone-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .agents-list {
+            margin-top: 20px;
+        }
+        .agent-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .agent-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .agent-phone {
+            color: #666;
+            font-size: 14px;
+        }
+        .agent-status {
+            float: right;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-available {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-busy {
+            background: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
-    <div class="dialer">
-        <div class="title">📞 Conference Call Dialer</div>
+    <div class="container">
+        <h1>📞 AI Dialer - Make Real Calls</h1>
         
-        <div class="instructions">
-            <strong>How it works:</strong><br>
-            1. Your Twilio number will call the target number<br>
-            2. Enter the target number (who you want to call)<br>
-            3. Click "Call from Twilio"<br>
-            4. The target will receive a call from your Twilio number<br>
-            5. You can have a real conversation!
+        <div class="form-group">
+            <label for="agentSelect">Select Agent:</label>
+            <select id="agentSelect">
+                <option value="">Loading agents...</option>
+            </select>
         </div>
         
-        <div>
-            <label>Target Number (who you want to call):</label>
-            <input type="tel" class="phone-input" id="targetPhone" placeholder="+1234567890" maxlength="20">
+        <div class="form-group">
+            <label for="phoneNumber">Phone Number to Call:</label>
+            <input type="tel" id="phoneNumber" placeholder="+1234567890" required>
         </div>
         
-        <button class="call-button" id="callButton" onclick="startCall()">📞 Call from Twilio</button>
-        <button class="call-button end-button" id="endButton" onclick="endCall()" style="display: none;">📞 End Call</button>
+        <div class="form-group">
+            <label for="callerName">Caller Name (Optional):</label>
+            <input type="text" id="callerName" placeholder="John Doe">
+        </div>
         
-        <div id="status" class="status" style="display: none;"></div>
+        <button id="callButton" onclick="makeCall()">📞 Make Call</button>
+        
+        <div id="status"></div>
+        
+        <div class="agents-list">
+            <h3>Available Agents</h3>
+            <div id="agentsList"></div>
+        </div>
     </div>
 
     <script>
-        let activeCall = null;
-
-        async function startCall() {
-            const targetPhone = document.getElementById('targetPhone').value.trim();
+        let agents = [];
+        
+        // Load agents on page load
+        window.onload = function() {
+            loadAgents();
+        };
+        
+        async function loadAgents() {
+            try {
+                const response = await fetch('http://localhost:3000/api/agents');
+                const data = await response.json();
+                agents = data.filter(agent => agent.agent_phone && agent.is_active);
+                
+                // Populate dropdown
+                const select = document.getElementById('agentSelect');
+                select.innerHTML = '<option value="">Select an agent...</option>';
+                
+                agents.forEach(agent => {
+                    const option = document.createElement('option');
+                    option.value = agent.id;
+                    option.textContent = `${agent.name} (${agent.agent_phone})`;
+                    select.appendChild(option);
+                });
+                
+                // Render agents list
+                renderAgents();
+                
+            } catch (error) {
+                console.error('Error loading agents:', error);
+                showStatus('Error loading agents. Make sure backend is running.', 'error');
+            }
+        }
+        
+        function renderAgents() {
+            const agentsList = document.getElementById('agentsList');
+            agentsList.innerHTML = '';
             
-            if (!targetPhone) {
-                showStatus('Please enter the target phone number', 'error');
+            agents.forEach(agent => {
+                const agentCard = document.createElement('div');
+                agentCard.className = 'agent-card';
+                agentCard.innerHTML = `
+                    <div class="agent-name">${agent.name}</div>
+                    <div class="agent-phone">Phone: ${agent.agent_phone}</div>
+                    <span class="agent-status ${agent.isOnCall ? 'status-busy' : 'status-available'}">
+                        ${agent.isOnCall ? 'On Call' : 'Available'}
+                    </span>
+                `;
+                agentsList.appendChild(agentCard);
+            });
+        }
+        
+        async function makeCall() {
+            const agentId = document.getElementById('agentSelect').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const callerName = document.getElementById('callerName').value;
+            
+            if (!agentId) {
+                showStatus('Please select an agent', 'error');
                 return;
             }
             
-            if (activeCall) {
-                showStatus('Call already in progress', 'warning');
+            if (!phoneNumber) {
+                showStatus('Please enter a phone number', 'error');
                 return;
             }
+            
+            // Disable button
+            const button = document.getElementById('callButton');
+            button.disabled = true;
+            button.textContent = '📞 Calling...';
             
             try {
-                showStatus('📞 Calling from your Twilio number...', 'info');
-                
-                // Start direct call from Twilio number to target
-                const response = await fetch('/call-direct', {
+                const response = await fetch('http://localhost:3000/call', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        to: targetPhone
+                        to: phoneNumber,
+                        agentId: parseInt(agentId),
+                        callerName: callerName || 'Unknown',
+                        callerEmail: 'demo@company.com'
                     })
                 });
-
+                
                 const result = await response.json();
-
+                
                 if (result.success) {
-                    showStatus('✅ Call connected! Target will hear your Twilio number.', 'success');
-                    activeCall = { sid: result.callSid };
-                    
-                    // Update UI
-                    document.getElementById('callButton').style.display = 'none';
-                    document.getElementById('endButton').style.display = 'block';
-                    document.getElementById('targetPhone').disabled = true;
+                    showStatus(`✅ Call initiated! Agent ${agentId} will ring first, then connect to ${phoneNumber}`, 'success');
+                    // Refresh agents to show updated status
+                    setTimeout(() => {
+                        loadAgents();
+                    }, 1000);
                 } else {
-                    showStatus('❌ Call failed: ' + result.error, 'error');
+                    showStatus(`❌ Call failed: ${result.error}`, 'error');
                 }
                 
             } catch (error) {
-                console.error('Call failed:', error);
-                showStatus('❌ Call failed: ' + error.message, 'error');
+                console.error('Error making call:', error);
+                showStatus(`❌ Call failed: ${error.message}`, 'error');
+            } finally {
+                // Re-enable button
+                button.disabled = false;
+                button.textContent = '📞 Make Call';
             }
         }
-
-        async function endCall() {
-            if (activeCall) {
-                try {
-                    await fetch('/end', { method: 'POST' });
-                } catch (error) {
-                    console.error('Error ending call:', error);
-                }
-            }
-            
-            // Reset UI
-            document.getElementById('callButton').style.display = 'block';
-            document.getElementById('endButton').style.display = 'none';
-            document.getElementById('targetPhone').disabled = false;
-            
-            activeCall = null;
-            showStatus('📞 Call ended', 'info');
-        }
-
+        
         function showStatus(message, type) {
             const status = document.getElementById('status');
             status.textContent = message;
-            status.className = 'status ' + type;
-            status.style.display = 'block';
+            status.className = `status ${type}`;
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.textContent = '';
+                    status.className = 'status';
+                }, 5000);
+            }
         }
     </script>
 </body>

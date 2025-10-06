@@ -9,9 +9,23 @@ export function Settings() {
     notifications: true
   })
 
-  const handleSave = () => {
-    // Save settings logic here
-    alert('Settings saved successfully!')
+  const handleSave = async () => {
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      })
+      
+      if (response.ok) {
+        alert('Settings saved successfully!')
+      } else {
+        alert('Failed to save settings. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      alert('Error saving settings. Please try again.')
+    }
   }
 
   return (

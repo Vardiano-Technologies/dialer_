@@ -1,85 +1,77 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Phone, Users, Clock, Settings, Home, PhoneCall } from 'lucide-react'
+import { Phone, Users, Clock, Settings, Home, PhoneCall, Search, Bell, User } from 'lucide-react'
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
+    { name: 'Home', href: '/', icon: Home },
     { name: 'Leads', href: '/leads', icon: Users },
-    { name: 'Manual Dialer', href: '/dialer', icon: PhoneCall },
-    { name: 'Call History', href: '/calls', icon: Clock },
-    { name: 'Twilio Setup', href: '/twilio-setup', icon: Phone },
+    { name: 'Calls', href: '/calls', icon: PhoneCall },
     { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Help', href: '/help', icon: Settings },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <Phone className="h-8 w-8 text-primary-600" />
-                <span className="ml-2 text-xl font-bold text-gray-900">AI Dialer</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-1">
-                {navigation.map((item) => {
-                  const Icon = item.icon
-                  const isActive = location.pathname === item.href
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                        isActive
-                          ? 'bg-primary-100 text-primary-700'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 inline mr-2" />
-                      {item.name}
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-900 flex">
+      {/* Sidebar */}
+      <div className="sidebar">
+        <div className="p-6">
+          <div className="flex items-center mb-8">
+            <Phone className="h-8 w-8 text-green-500" />
+            <span className="ml-3 text-xl font-bold text-white">AI Dialer</span>
           </div>
-        </div>
-      </nav>
-
-      {/* Mobile Navigation */}
-      <div className="md:hidden bg-white border-b border-gray-200">
-        <div className="px-2 pt-2 pb-3 space-y-1">
-          {navigation.map((item) => {
-            const Icon = item.icon
-            const isActive = location.pathname === item.href
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
-                  isActive
-                    ? 'bg-primary-100 text-primary-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="h-4 w-4 inline mr-2" />
-                {item.name}
-              </Link>
-            )
-          })}
+          
+          <nav className="space-y-2">
+            {navigation.map((item) => {
+              const Icon = item.icon
+              const isActive = location.pathname === item.href
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                >
+                  <Icon className="h-5 w-5 mr-3" />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </nav>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col">
+        {/* Top Navigation Bar */}
+        <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Search className="h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <Bell className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer" />
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-white text-sm">Admin</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Page Content */}
+        <main className="flex-1 p-6">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }
