@@ -10,7 +10,7 @@
     "frontend:build": "vite build",
     "frontend:preview": "vite preview",
     "build": "npm run frontend:build",
-    "vercel-build": "npm run frontend:build"
+    "vercel-build": "npm run frontend:build && echo 'Build completed successfully'"
   },
   "dependencies": {
     "@prisma/client": "^6.16.3",
