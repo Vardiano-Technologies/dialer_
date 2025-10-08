@@ -8,6 +8,11 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import twilio from "twilio";
 import Database from 'better-sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Initialize SQLite database - use in-memory for Vercel
 const db = new Database(process.env.NODE_ENV === 'production' ? ':memory:' : './agents.db');
@@ -61,15 +66,29 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Only serve static files in development
-if (process.env.NODE_ENV !== 'production') {
-  app.use(express.static('public'));
+// Serve static files
+app.use(express.static('public'));
+
+// Serve built frontend files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('dist'));
 }
 
 
 app.get("/", (req, res) => {
-  res.send("🚀 AI Dialer is running. Use POST /call with { to: '+919711794552' }");
+  if (process.env.NODE_ENV === 'production') {
+    res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+  } else {
+    res.send("🚀 AI Dialer is running. Use POST /call with { to: '+919711794552' }");
+  }
 });
+
+// Serve React app for all other routes in production
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+  });
+}
 
 // Health check endpoint
 app.get("/health", (req, res) => {

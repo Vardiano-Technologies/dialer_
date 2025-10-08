@@ -35,6 +35,14 @@
       "dest": "/server.js"
     },
     {
+      "src": "/agent-dashboard.html",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/simple-dialer.html",
+      "dest": "/server.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/dist/$1"
     }

@@ -2,7 +2,7 @@
 import twilio from 'twilio';
 
 const accountSid = 'AC75988346548d3ba099d8177fc6d8b6a9';
-const authToken = '8c5322bd1a77aab2d57056077dc78df2';
+const authToken = 'd4cf926bfc568d4f8bf817d753bc40a8';
 
 console.log('🔍 Testing Twilio credentials...');
 console.log('Account SID:', accountSid);
