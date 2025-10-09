@@ -1038,6 +1038,16 @@ app.put("/api/settings", (req, res) => {
   res.json({ success: true, message: "Settings updated" });
 });
 
+// Serve agent dashboard HTML
+app.get("/agent-dashboard.html", (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'agent-dashboard.html'));
+});
+
+// Serve simple dialer HTML
+app.get("/simple-dialer.html", (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'simple-dialer.html'));
+});
+
 // Export for Vercel
 export default app;
 
