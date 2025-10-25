@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - AI Dialer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-6">Admin Login</h1>
+        
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="email" required 
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="password" required 
+                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <button type="submit" 
+                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                Login
+            </button>
+        </form>
+        
+        <div id="error" class="mt-4 text-red-600 text-sm hidden"></div>
+        
+        <div class="mt-6 text-center">
+            <a href="agent-dashboard.html" class="text-blue-600 hover:underline">Go to Agent Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                // Simple admin check (in production, use proper authentication)
+                if (email === 'admin@company.com' && password === 'admin123') {
+                    localStorage.setItem('userRole', 'admin');
+                    localStorage.setItem('userEmail', email);
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    // Check if it's a regular agent
+                    const response = await fetch('/api/agents');
+                    const agents = await response.json();
+                    const agent = agents.find(a => a.email === email);
+                    
+                    if (agent) {
+                        localStorage.setItem('userRole', 'agent');
+                        localStorage.setItem('userEmail', email);
+                        localStorage.setItem('agentId', agent.id);
+                        window.location.href = 'agent-dashboard.html';
+                    } else {
+                        showError('Invalid credentials');
+                    }
+                }
+            } catch (error) {
+                showError('Login failed. Please try again.');
+            }
+        });
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

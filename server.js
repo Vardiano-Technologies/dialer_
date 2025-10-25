@@ -50,11 +50,14 @@ const agentCount = db.prepare('SELECT COUNT(*) as count FROM agents').get();
 if (agentCount.count === 0) {
   try {
     const insertAgent = db.prepare('INSERT INTO agents (name, email, phone, agent_phone, is_active) VALUES (?, ?, ?, ?, ?)');
-    insertAgent.run('John Smith', 'john@company.com', '+1234567890', '+919711794552', 1);
-    insertAgent.run('Sarah Johnson', 'sarah@company.com', '+1987654321', '+919711794553', 1);
-    insertAgent.run('Mike Wilson', 'mike@company.com', '+1555123456', '+919711794554', 1);
-    insertAgent.run('Lisa Brown', 'lisa@company.com', '+1555123457', '+919711794555', 1);
-    console.log('📊 Sample agents created with phone numbers');
+    // Add default admin user
+    insertAgent.run('Admin User', 'admin@company.com', '+1234567890', '+919711794552', 1);
+    // Add sample agents
+    insertAgent.run('John Smith', 'john@company.com', '+1234567891', '+919711794553', 1);
+    insertAgent.run('Sarah Johnson', 'sarah@company.com', '+1987654321', '+919711794554', 1);
+    insertAgent.run('Mike Wilson', 'mike@company.com', '+1555123456', '+919711794555', 1);
+    insertAgent.run('Lisa Brown', 'lisa@company.com', '+1555123457', '+919711794556', 1);
+    console.log('📊 Sample agents and admin user created');
   } catch (err) {
     console.log('📊 Sample agents already exist or error creating:', err.message);
   }
