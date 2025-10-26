@@ -888,18 +888,18 @@ app.get("/api/agents", (req, res) => {
 // Add new agent
 app.post("/api/agents", (req, res) => {
   try {
-    const { name, email, phone, agent_phone } = req.body;
+    const { name, email, phone, agent_phone, company_id } = req.body;
     
     if (!name || !email) {
       return res.status(400).json({ error: "Name and email are required" });
     }
 
     const insertAgent = db.prepare(`
-      INSERT INTO agents (name, email, phone, agent_phone, is_active) 
-      VALUES (?, ?, ?, ?, 1)
+      INSERT INTO agents (company_id, name, email, phone, agent_phone, is_active) 
+      VALUES (?, ?, ?, ?, ?, 1)
     `);
     
-    const result = insertAgent.run(name, email, phone || null, agent_phone || null);
+    const result = insertAgent.run(company_id || 1, name, email, phone || null, agent_phone || null);
     
     // Refresh agent phones
     AGENT_PHONES = getAgentPhones();
@@ -908,6 +908,7 @@ app.post("/api/agents", (req, res) => {
       success: true, 
       agent: { 
         id: result.lastInsertRowid, 
+        company_id: company_id || 1,
         name, 
         email, 
         phone, 
