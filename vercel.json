@@ -35,6 +35,10 @@
       "dest": "/server.js"
     },
     {
+      "src": "/health",
+      "dest": "/server.js"
+    },
+    {
       "src": "/agent-dashboard.html",
       "dest": "/server.js"
     },
@@ -49,5 +53,10 @@
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "functions": {
+    "server.js": {
+      "maxDuration": 30
+    }
   }
 }
