@@ -13,9 +13,9 @@ interface TwilioSetupProps {
 
 export function TwilioSetup() {
   const [formData, setFormData] = useState({
-    accountSid: 'AC75988346548d3ba099d8177fc6d8b6a9',
-    authToken: '8c5322bd1a77aab2d57056077dc78df2',
-    phoneNumber: '+18148460215'
+    accountSid: process.env.TWILIO_ACCOUNT_SID || 'Your Twilio Account SID',
+    authToken: process.env.TWILIO_AUTH_TOKEN || 'Your Twilio Auth Token',
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER || 'Your Twilio Phone Number'
   })
   const [status, setStatus] = useState('')
   const [isConfigured, setIsConfigured] = useState(false)

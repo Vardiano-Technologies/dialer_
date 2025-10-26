@@ -106,9 +106,9 @@ app.get("/health", (req, res) => {
 // 🔑 Replace with your Twilio credentials
 
 // Twilio configuration
-const accountSid = process.env.TWILIO_ACCOUNT_SID || 'AC75988346548d3ba099d8177fc6d8b6a9';
-const authToken = process.env.TWILIO_AUTH_TOKEN || '9f305781edc036a7cbed252a2d0aeff5';
-const twilioNumber = process.env.TWILIO_PHONE_NUMBER || '+18148460215';
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioNumber = process.env.TWILIO_PHONE_NUMBER;
 
 const client = twilio(accountSid, authToken);
 
@@ -1024,9 +1024,9 @@ app.get("/api/dashboard/stats", (req, res) => {
 app.get("/api/settings", (req, res) => {
   res.json({
     twilio: {
-      accountSid: 'AC75988346548d3ba099d8177fc6d8b6a9',
-      authToken: '8c5322bd1a77aab2d57056077dc78df2',
-      phoneNumber: '+18148460215'
+      accountSid: process.env.TWILIO_ACCOUNT_SID || 'Your Twilio Account SID',
+      authToken: process.env.TWILIO_AUTH_TOKEN || 'Your Twilio Auth Token',
+      phoneNumber: process.env.TWILIO_PHONE_NUMBER || 'Your Twilio Phone Number'
     },
     dialer: {
       maxConcurrentCalls: 1,
