@@ -45,23 +45,28 @@ db.exec(`
   );
 `);
 
-// Insert sample agents if none exist
-const agentCount = db.prepare('SELECT COUNT(*) as count FROM agents').get();
-if (agentCount.count === 0) {
+// Function to initialize database with sample data
+function initializeDatabase() {
   try {
-    const insertAgent = db.prepare('INSERT INTO agents (name, email, phone, agent_phone, is_active) VALUES (?, ?, ?, ?, ?)');
-    // Add default admin user
-    insertAgent.run('Admin User', 'admin@company.com', '+1234567890', '+919711794552', 1);
-    // Add sample agents
-    insertAgent.run('John Smith', 'john@company.com', '+1234567891', '+919711794553', 1);
-    insertAgent.run('Sarah Johnson', 'sarah@company.com', '+1987654321', '+919711794554', 1);
-    insertAgent.run('Mike Wilson', 'mike@company.com', '+1555123456', '+919711794555', 1);
-    insertAgent.run('Lisa Brown', 'lisa@company.com', '+1555123457', '+919711794556', 1);
-    console.log('📊 Sample agents and admin user created');
+    const agentCount = db.prepare('SELECT COUNT(*) as count FROM agents').get();
+    if (agentCount.count === 0) {
+      const insertAgent = db.prepare('INSERT INTO agents (name, email, phone, agent_phone, is_active) VALUES (?, ?, ?, ?, ?)');
+      // Add default admin user
+      insertAgent.run('Admin User', 'admin@company.com', '+1234567890', '+919711794552', 1);
+      // Add sample agents
+      insertAgent.run('John Smith', 'john@company.com', '+1234567891', '+919711794553', 1);
+      insertAgent.run('Sarah Johnson', 'sarah@company.com', '+1987654321', '+919711794554', 1);
+      insertAgent.run('Mike Wilson', 'mike@company.com', '+1555123456', '+919711794555', 1);
+      insertAgent.run('Lisa Brown', 'lisa@company.com', '+1555123457', '+919711794556', 1);
+      console.log('📊 Sample agents and admin user created');
+    }
   } catch (err) {
-    console.log('📊 Sample agents already exist or error creating:', err.message);
+    console.log('📊 Database initialization error:', err.message);
   }
 }
+
+// Initialize database
+initializeDatabase();
 
 const app = express();
 
@@ -106,11 +111,18 @@ app.get("/health", (req, res) => {
 // 🔑 Replace with your Twilio credentials
 
 // Twilio configuration
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioNumber = process.env.TWILIO_PHONE_NUMBER;
+const accountSid = process.env.TWILIO_ACCOUNT_SID || (process.env.NODE_ENV === 'development' ? 'AC75988346548d3ba099d8177fc6d8b6a9' : null);
+const authToken = process.env.TWILIO_AUTH_TOKEN || (process.env.NODE_ENV === 'development' ? '9f305781edc036a7cbed252a2d0aeff5' : null);
+const twilioNumber = process.env.TWILIO_PHONE_NUMBER || (process.env.NODE_ENV === 'development' ? '+18148460215' : null);
 
 const client = twilio(accountSid, authToken);
+
+// Debug: Log Twilio configuration (remove in production)
+console.log('🔑 Twilio Config:', {
+  accountSid: accountSid ? `${accountSid.substring(0, 8)}...` : 'NOT SET',
+  authToken: authToken ? `${authToken.substring(0, 8)}...` : 'NOT SET',
+  twilioNumber: twilioNumber || 'NOT SET'
+});
 
 // Function to get agent phone numbers from database
 function getAgentPhones() {
@@ -825,6 +837,9 @@ app.get("/api/calls/active", (req, res) => {
 // Agent management endpoints
 app.get("/api/agents", (req, res) => {
   try {
+    // Ensure database is initialized
+    initializeDatabase();
+    
     const rows = db.prepare("SELECT * FROM agents ORDER BY created_at DESC").all();
     // Add call status
     const agentsWithStatus = rows.map(agent => ({
