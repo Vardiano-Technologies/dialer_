@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Users, Plus, Upload, Trash2, Edit, Phone } from 'lucide-react'
 
+interface User {
+  role: string;
+  email: string;
+  agentId?: number;
+}
+
+interface LeadsProps {
+  user: User;
+}
+
 interface Lead {
   id: string
   firstName: string

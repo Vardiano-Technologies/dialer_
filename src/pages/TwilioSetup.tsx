@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Phone, CheckCircle, AlertCircle, Info } from 'lucide-react'
 
+interface User {
+  role: string;
+  email: string;
+  agentId?: number;
+}
+
+interface TwilioSetupProps {
+  user: User;
+}
+
 export function TwilioSetup() {
   const [formData, setFormData] = useState({
     accountSid: 'AC75988346548d3ba099d8177fc6d8b6a9',

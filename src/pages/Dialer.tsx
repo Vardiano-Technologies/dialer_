@@ -21,6 +21,16 @@ const dialPad = [
   ['*', '0', '#']
 ]
 
+interface User {
+  role: string;
+  email: string;
+  agentId?: number;
+}
+
+interface DialerProps {
+  user: User;
+}
+
 export function Dialer() {
   const [selectedCountry, setSelectedCountry] = useState(countryCodes[0])
   const [phoneNumber, setPhoneNumber] = useState('')

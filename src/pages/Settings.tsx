@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { Settings as SettingsIcon, Save, RefreshCw } from 'lucide-react'
 
+interface User {
+  role: string;
+  email: string;
+  agentId?: number;
+}
+
+interface SettingsProps {
+  user: User;
+}
+
 export function Settings() {
   const [settings, setSettings] = useState({
     companyName: 'AI Dialer',

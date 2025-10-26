@@ -13,6 +13,16 @@ interface Call {
   createdAt: string
 }
 
+interface User {
+  role: string;
+  email: string;
+  agentId?: number;
+}
+
+interface CallsProps {
+  user: User;
+}
+
 export function Calls() {
   const [calls, setCalls] = useState<Call[]>([])
   const [loading, setLoading] = useState(true)

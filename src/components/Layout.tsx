@@ -1,7 +1,14 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Phone, Users, Clock, Settings, Home, PhoneCall, Search, Bell, User } from 'lucide-react'
+import { Phone, Users, Clock, Settings, Home, PhoneCall, Search, Bell, User, LogOut } from 'lucide-react'
 
-export function Layout({ children }: { children: React.ReactNode }) {
+interface LayoutProps {
+  children: React.ReactNode;
+  userRole?: string;
+  userName?: string;
+  onLogout?: () => void;
+}
+
+export function Layout({ children, userRole, userName, onLogout }: LayoutProps) {
   const location = useLocation()
 
   const navigation = [
@@ -62,7 +69,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-white text-sm">Admin</span>
+                <span className="text-white text-sm">{userName || (userRole === 'admin' ? 'Admin' : 'Agent')}</span>
+                {onLogout && (
+                  <button
+                    onClick={onLogout}
+                    className="text-gray-400 hover:text-white p-1 ml-2"
+                    title="Logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>

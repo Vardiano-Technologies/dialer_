@@ -11,7 +11,11 @@ interface Agent {
   isOnCall?: boolean
 }
 
-export function Agents() {
+interface AgentsProps {
+  userRole?: string;
+}
+
+export function Agents({ userRole }: AgentsProps) {
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -131,13 +135,15 @@ export function Agents() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-white">Agent Management</h1>
-        <button
-          onClick={openAddModal}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Agent
-        </button>
+        {userRole === 'admin' && (
+          <button
+            onClick={openAddModal}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Agent
+          </button>
+        )}
       </div>
 
       {/* Stats Cards */}
