@@ -19,18 +19,34 @@ const db = new Database(process.env.NODE_ENV === 'production' ? ':memory:' : './
 
 // Create tables if they don't exist
 db.exec(`
+  CREATE TABLE IF NOT EXISTS companies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    phone TEXT,
+    subscription_plan TEXT DEFAULT 'basic',
+    status TEXT DEFAULT 'active',
+    agents_limit INTEGER DEFAULT 5,
+    calls_limit INTEGER DEFAULT 100,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_active DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  
   CREATE TABLE IF NOT EXISTS agents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id INTEGER,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     phone TEXT,
     agent_phone TEXT,
     is_active BOOLEAN DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies (id)
   );
   
   CREATE TABLE IF NOT EXISTS calls (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id INTEGER,
     agent_id INTEGER,
     phone_number TEXT NOT NULL,
     caller_name TEXT,
@@ -41,6 +57,7 @@ db.exec(`
     end_time DATETIME,
     outcome TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies (id),
     FOREIGN KEY (agent_id) REFERENCES agents (id)
   );
 `);
@@ -48,17 +65,32 @@ db.exec(`
 // Function to initialize database with sample data
 function initializeDatabase() {
   try {
+    // Initialize companies first
+    const companyCount = db.prepare('SELECT COUNT(*) as count FROM companies').get();
+    if (companyCount.count === 0) {
+      const insertCompany = db.prepare('INSERT INTO companies (name, email, phone, subscription_plan, agents_limit, calls_limit) VALUES (?, ?, ?, ?, ?, ?)');
+      
+      // Add sample companies
+      insertCompany.run('TechCorp Solutions', 'admin@techcorp.com', '+1234567890', 'premium', 10, 500);
+      insertCompany.run('SalesForce Inc', 'admin@salesforce.com', '+1987654321', 'basic', 5, 100);
+      insertCompany.run('Marketing Pro', 'admin@marketingpro.com', '+1555123456', 'standard', 8, 250);
+      
+      console.log('📊 Sample companies created');
+    }
+    
+    // Initialize agents
     const agentCount = db.prepare('SELECT COUNT(*) as count FROM agents').get();
     if (agentCount.count === 0) {
-      const insertAgent = db.prepare('INSERT INTO agents (name, email, phone, agent_phone, is_active) VALUES (?, ?, ?, ?, ?)');
-      // Add default admin user
-      insertAgent.run('Admin User', 'admin@company.com', '+1234567890', '+919711794552', 1);
-      // Add sample agents
-      insertAgent.run('John Smith', 'john@company.com', '+1234567891', '+919711794553', 1);
-      insertAgent.run('Sarah Johnson', 'sarah@company.com', '+1987654321', '+919711794554', 1);
-      insertAgent.run('Mike Wilson', 'mike@company.com', '+1555123456', '+919711794555', 1);
-      insertAgent.run('Lisa Brown', 'lisa@company.com', '+1555123457', '+919711794556', 1);
-      console.log('📊 Sample agents and admin user created');
+      const insertAgent = db.prepare('INSERT INTO agents (company_id, name, email, phone, agent_phone, is_active) VALUES (?, ?, ?, ?, ?, ?)');
+      
+      // Add agents for each company
+      insertAgent.run(1, 'Admin User', 'admin@company.com', '+1234567890', '+919711794552', 1);
+      insertAgent.run(1, 'John Smith', 'john@company.com', '+1234567891', '+919711794553', 1);
+      insertAgent.run(2, 'Sarah Johnson', 'sarah@company.com', '+1987654321', '+919711794554', 1);
+      insertAgent.run(3, 'Mike Wilson', 'mike@company.com', '+1555123456', '+919711794555', 1);
+      insertAgent.run(3, 'Lisa Brown', 'lisa@company.com', '+1555123457', '+919711794556', 1);
+      
+      console.log('📊 Sample agents created');
     }
   } catch (err) {
     console.log('📊 Database initialization error:', err.message);
@@ -73,6 +105,22 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+
+// Ensure database is initialized for API requests (Vercel cold start issue)
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.path.startsWith('/api')) {
+    try {
+      const agentCount = db.prepare('SELECT COUNT(*) as count FROM agents').get();
+      if (agentCount.count === 0) {
+        console.log('🔄 Re-initializing database due to cold start');
+        initializeDatabase();
+      }
+    } catch (err) {
+      console.log('⚠️ Database check error:', err.message);
+    }
+  }
+  next();
+});
 
 // Serve static files
 app.use(express.static('public'));
@@ -856,18 +904,18 @@ app.get("/api/agents", (req, res) => {
 // Add new agent
 app.post("/api/agents", (req, res) => {
   try {
-    const { name, email, phone, agent_phone } = req.body;
+    const { name, email, phone, agent_phone, company_id } = req.body;
     
     if (!name || !email) {
       return res.status(400).json({ error: "Name and email are required" });
     }
 
     const insertAgent = db.prepare(`
-      INSERT INTO agents (name, email, phone, agent_phone, is_active) 
-      VALUES (?, ?, ?, ?, 1)
+      INSERT INTO agents (company_id, name, email, phone, agent_phone, is_active) 
+      VALUES (?, ?, ?, ?, ?, 1)
     `);
     
-    const result = insertAgent.run(name, email, phone || null, agent_phone || null);
+    const result = insertAgent.run(company_id || 1, name, email, phone || null, agent_phone || null);
     
     // Refresh agent phones
     AGENT_PHONES = getAgentPhones();
@@ -876,6 +924,7 @@ app.post("/api/agents", (req, res) => {
       success: true, 
       agent: { 
         id: result.lastInsertRowid, 
+        company_id: company_id || 1,
         name, 
         email, 
         phone, 
@@ -1033,6 +1082,217 @@ app.get("/api/dashboard/stats", (req, res) => {
     successRate,
     totalDuration
   });
+});
+
+// ==================== COMPANY MANAGEMENT ENDPOINTS ====================
+
+// Get all companies
+app.get("/api/companies", (req, res) => {
+  try {
+    initializeDatabase();
+    const rows = db.prepare(`
+      SELECT c.*, 
+             COUNT(DISTINCT a.id) as total_agents,
+             COUNT(DISTINCT cl.id) as total_calls
+      FROM companies c
+      LEFT JOIN agents a ON c.id = a.company_id
+      LEFT JOIN calls cl ON c.id = cl.company_id
+      GROUP BY c.id
+      ORDER BY c.created_at DESC
+    `).all();
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get company by ID
+app.get("/api/companies/:id", (req, res) => {
+  const { id } = req.params;
+  try {
+    const company = db.prepare("SELECT * FROM companies WHERE id = ?").get(id);
+    if (!company) {
+      return res.status(404).json({ error: "Company not found" });
+    }
+    
+    // Get company statistics
+    const stats = db.prepare(`
+      SELECT 
+        COUNT(DISTINCT a.id) as total_agents,
+        COUNT(DISTINCT cl.id) as total_calls,
+        SUM(cl.duration) as total_duration,
+        COUNT(CASE WHEN cl.status = 'completed' THEN 1 END) as successful_calls
+      FROM companies c
+      LEFT JOIN agents a ON c.id = a.company_id
+      LEFT JOIN calls cl ON c.id = cl.company_id
+      WHERE c.id = ?
+    `).get(id);
+    
+    res.json({ ...company, stats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add new company
+app.post("/api/companies", (req, res) => {
+  try {
+    const { name, email, phone, subscription_plan, agents_limit, calls_limit } = req.body;
+    
+    if (!name || !email) {
+      return res.status(400).json({ error: "Name and email are required" });
+    }
+
+    const insertCompany = db.prepare(`
+      INSERT INTO companies (name, email, phone, subscription_plan, agents_limit, calls_limit) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    
+    const result = insertCompany.run(
+      name, 
+      email, 
+      phone || null, 
+      subscription_plan || 'basic',
+      agents_limit || 5,
+      calls_limit || 100
+    );
+    
+    res.json({ 
+      success: true, 
+      company: { 
+        id: result.lastInsertRowid, 
+        name, 
+        email, 
+        phone,
+        subscription_plan: subscription_plan || 'basic',
+        agents_limit: agents_limit || 5,
+        calls_limit: calls_limit || 100,
+        status: 'active'
+      } 
+    });
+  } catch (err) {
+    if (err.message.includes('UNIQUE constraint failed')) {
+      res.status(400).json({ error: "Email already exists" });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
+  }
+});
+
+// Update company
+app.put("/api/companies/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, subscription_plan, status, agents_limit, calls_limit } = req.body;
+    
+    const updateCompany = db.prepare(`
+      UPDATE companies 
+      SET name = ?, email = ?, phone = ?, subscription_plan = ?, status = ?, agents_limit = ?, calls_limit = ?
+      WHERE id = ?
+    `);
+    
+    const result = updateCompany.run(name, email, phone, subscription_plan, status, agents_limit, calls_limit, id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Company not found" });
+    }
+    
+    res.json({ success: true, message: "Company updated successfully" });
+  } catch (err) {
+    if (err.message.includes('UNIQUE constraint failed')) {
+      res.status(400).json({ error: "Email already exists" });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
+  }
+});
+
+// Delete company
+app.delete("/api/companies/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if company has agents
+    const agentCount = db.prepare("SELECT COUNT(*) as count FROM agents WHERE company_id = ?").get(id);
+    if (agentCount.count > 0) {
+      return res.status(400).json({ error: "Cannot delete company with existing agents" });
+    }
+    
+    const deleteCompany = db.prepare("DELETE FROM companies WHERE id = ?");
+    const result = deleteCompany.run(id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Company not found" });
+    }
+    
+    res.json({ success: true, message: "Company deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get company agents
+app.get("/api/companies/:id/agents", (req, res) => {
+  const { id } = req.params;
+  try {
+    const rows = db.prepare("SELECT * FROM agents WHERE company_id = ? ORDER BY created_at DESC").all(id);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get company calls
+app.get("/api/companies/:id/calls", (req, res) => {
+  const { id } = req.params;
+  try {
+    const rows = db.prepare(`
+      SELECT c.*, a.name as agent_name 
+      FROM calls c 
+      LEFT JOIN agents a ON c.agent_id = a.id 
+      WHERE c.company_id = ? 
+      ORDER BY c.created_at DESC
+    `).all(id);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin dashboard overview
+app.get("/api/admin/dashboard", (req, res) => {
+  try {
+    initializeDatabase();
+    
+    // Get total companies
+    const totalCompanies = db.prepare("SELECT COUNT(*) as count FROM companies").get();
+    
+    // Get active companies
+    const activeCompanies = db.prepare("SELECT COUNT(*) as count FROM companies WHERE status = 'active'").get();
+    
+    // Get total agents across all companies
+    const totalAgents = db.prepare("SELECT COUNT(*) as count FROM agents").get();
+    
+    // Get total calls across all companies
+    const totalCalls = db.prepare("SELECT COUNT(*) as count FROM calls").get();
+    
+    // Get subscription plan distribution
+    const planStats = db.prepare(`
+      SELECT subscription_plan, COUNT(*) as count 
+      FROM companies 
+      GROUP BY subscription_plan
+    `).all();
+    
+    res.json({
+      totalCompanies: totalCompanies.count,
+      activeCompanies: activeCompanies.count,
+      totalAgents: totalAgents.count,
+      totalCalls: totalCalls.count,
+      planDistribution: planStats
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Settings endpoints

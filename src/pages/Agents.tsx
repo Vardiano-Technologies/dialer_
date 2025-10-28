@@ -35,11 +35,12 @@ export function Agents({ userRole }: AgentsProps) {
 
   const loadAgents = async () => {
     try {
-      const apiUrl = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000'
+      const apiUrl = process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:3000'
       const response = await fetch(`${apiUrl}/api/agents`)
       if (response.ok) {
         const data = await response.json()
         setAgents(data)
+        console.log('Loaded agents:', data) // Debug log
       } else {
         console.error('Failed to load agents:', response.statusText)
       }
@@ -54,7 +55,7 @@ export function Agents({ userRole }: AgentsProps) {
     e.preventDefault()
     
     try {
-      const apiUrl = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000'
+      const apiUrl = process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:3000'
       const url = editingAgent 
         ? `${apiUrl}/api/agents/${editingAgent.id}`
         : `${apiUrl}/api/agents`
@@ -99,7 +100,7 @@ export function Agents({ userRole }: AgentsProps) {
     if (!confirm('Are you sure you want to delete this agent?')) return
 
     try {
-      const apiUrl = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000'
+      const apiUrl = process.env.NODE_ENV === 'production' ? window.location.origin : 'http://localhost:3000'
       const response = await fetch(`${apiUrl}/api/agents/${id}`, {
         method: 'DELETE'
       })
