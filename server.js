@@ -106,6 +106,22 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Ensure database is initialized for API requests (Vercel cold start issue)
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.path.startsWith('/api')) {
+    try {
+      const agentCount = db.prepare('SELECT COUNT(*) as count FROM agents').get();
+      if (agentCount.count === 0) {
+        console.log('🔄 Re-initializing database due to cold start');
+        initializeDatabase();
+      }
+    } catch (err) {
+      console.log('⚠️ Database check error:', err.message);
+    }
+  }
+  next();
+});
+
 // Serve static files
 app.use(express.static('public'));
 
